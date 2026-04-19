@@ -1,0 +1,68 @@
+# ============================================================
+#  যোগাযোগ — Apache .htaccess
+#  Place this in the ROOT of the project (/yogayog/)
+# ============================================================
+
+Options -Indexes
+ServerSignature Off
+
+# ── Rewrite Engine ───────────────────────────────────────────
+RewriteEngine On
+RewriteBase /yogayog/
+
+# Force HTTPS (uncomment on production)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Block access to sensitive directories
+RewriteRule ^config/ - [F,L]
+RewriteRule ^database/ - [F,L]
+RewriteRule ^logs/ - [F,L]
+RewriteRule ^scripts/ - [F,L]
+
+# Route all non-file/dir requests to frontend/index.html
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^frontend/(.*)$ frontend/index.html [L]
+
+# ── Security Headers ─────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # CSP — tighten in production
+    Header set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'"
+</IfModule>
+
+# ── GZIP Compression ─────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/xml
+</IfModule>
+
+# ── Browser Caching ──────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg         "access plus 1 month"
+    ExpiresByType image/png          "access plus 1 month"
+    ExpiresByType image/gif          "access plus 1 month"
+    ExpiresByType image/webp         "access plus 1 month"
+    ExpiresByType text/css           "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType application/json   "access plus 0 seconds"
+</IfModule>
+
+# ── PHP Settings ─────────────────────────────────────────────
+<IfModule mod_php.c>
+    php_value upload_max_filesize 8M
+    php_value post_max_size 10M
+    php_value max_execution_time 60
+    php_value memory_limit 256M
+</IfModule>
+
+# ── Block bad bots ───────────────────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} (libwww-perl|wget|python|curl|nikto|scan) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
